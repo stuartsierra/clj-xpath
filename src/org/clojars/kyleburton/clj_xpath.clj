@@ -335,6 +335,15 @@
                 ;;(println (format "getPrefix: %s => %s" uri (get uri-map uri)))
                 (get uri-map uri)))))
 
+(defn with-namespace-context* [context-map f]
+  (binding [*namespace-aware* true
+            *xpath-compiler*  (.newXPath *xpath-factory*)]
+    (.setNamespaceContext *xpath-compiler* (nscontext context-map))
+    (f)))
+
+(defmacro with-namespace-context [context-map & body]
+  `(with-namespace-context* ~context-map (fn [] ~@body)))
+
 ;; (defn string-reader [s] (InputSource. (StringReader. s)))
 ;; ;; turn a Node into the same form the clojure.xml/parse builds
 ;; (defmulti  node-parse (fn [thing] (class thing)))
