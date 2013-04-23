@@ -3,7 +3,7 @@
    [clojure.string :as str-utils])
   (:import
    [java.io                     InputStream InputStreamReader StringReader File IOException ByteArrayInputStream]
-   [org.xml.sax                 InputSource SAXException]
+   [org.xml.sax                 InputSource SAXException EntityResolver]
    [javax.xml.transform         Source]
    [javax.xml.transform.stream  StreamSource]
    [javax.xml.validation        SchemaFactory]
@@ -45,6 +45,18 @@ See: format"
 
 (def ^:dynamic *validation* false)
 
+(defn- dummy-entity-resolver
+  "Returns a no-op EntityResolver. Prevents the XML parser from
+  downloading XML DTDs from remote hosts, but also prevents resolution
+  of any XML character entities beyond the core XML &amp;, &quot;,
+  etc.
+
+  See http://stuartsierra.com/2008/05/08/stop-your-java-sax-parser-from-downloading-dtds"
+  []
+  (reify EntityResolver
+    (resolveEntity [this public-id system-id]
+      (InputSource. (StringReader. "")))))
+
 (defn- input-stream->dom
   "Convert an input stream into a DOM."
   [istr & [opts]]
@@ -56,6 +68,7 @@ See: format"
         error-h     (:error-handler opts)]
     (when error-h
       (.setErrorHandler builder error-h))
+    (.setEntityResolver builder (dummy-entity-resolver))
     (.parse builder istr)))
 
 (defn- xml-bytes->dom
